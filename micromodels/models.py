@@ -53,6 +53,16 @@ class Model(object):
         '''
         def __init__(cls, name, bases, attrs):
             cls._clsfields = {}
+
+            # Inherit fields from parent classes.
+            # There is probably a better way to do this...
+            for parent in cls.mro():
+                if hasattr(parent, '_clsfields'):
+                    for key, value in parent._clsfields.iteritems():
+                        if isinstance(value, BaseField):
+                            cls._clsfields[key] = value
+
+            # Setup our own fields last so that parent fields can be overriden.
             for key, value in attrs.iteritems():
                 if isinstance(value, BaseField):
                     cls._clsfields[key] = value
