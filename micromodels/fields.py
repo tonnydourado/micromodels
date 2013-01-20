@@ -1,5 +1,7 @@
 import datetime
+import decimal
 import PySO8601
+import uuid
 
 
 class BaseField(object):
@@ -77,6 +79,17 @@ class FloatField(BaseField):
         return float(self.data)
 
 
+class DecimalField(BaseField):
+    """Field to represent a :mod:`decimal.Decimal`"""
+
+    def to_python(self):
+        if isinstance(self.data, decimal.Decimal):
+            return self.data
+        if isinstance(self.data, float):
+            return decimal.Decimal(repr(self.data))
+        return decimal.Decimal(self.data)
+
+
 class BooleanField(BaseField):
     """Field to represent a boolean"""
 
@@ -128,6 +141,7 @@ class DateTimeField(BaseField):
             return time_obj.isoformat()
         return time_obj.strftime(self.serial_format)
 
+
 class DateField(DateTimeField):
     """Field to represent a :mod:`datetime.date`"""
 
@@ -135,7 +149,7 @@ class DateField(DateTimeField):
         # don't parse data that is already native
         if isinstance(self.data, datetime.date):
             return self.data
-        
+
         dt = super(DateField, self).to_python()
         return dt.date()
 
@@ -152,6 +166,15 @@ class TimeField(DateTimeField):
             return PySO8601.parse_time(self.data).time()
         else:
             return datetime.datetime.strptime(self.data, self.format).time()
+
+
+class UUIDField(BaseField):
+    """Field to represent a :mod:`uuid.UUID`"""
+
+    def to_python(self):
+        if isinstance(self.data, uuid.UUID):
+            return self.data
+        return uuid.UUID(self.data)
 
 
 class WrappedObjectField(BaseField):
