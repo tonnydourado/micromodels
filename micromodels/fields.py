@@ -176,6 +176,9 @@ class UUIDField(BaseField):
             return self.data
         return uuid.UUID(self.data)
 
+    def to_serial(self, uuid_obj):
+        return uuid_obj.hex
+
 
 class WrappedObjectField(BaseField):
     """Superclass for any fields that wrap an object"""
