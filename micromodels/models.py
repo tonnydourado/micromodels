@@ -5,6 +5,7 @@ except ImportError:
 
 from .fields import BaseField, ValidationError
 
+
 class Model(object):
     """The Model is the main component of micromodels. Model makes it trivial
     to parse data from many sources, including JSON APIs.
@@ -135,7 +136,6 @@ class Model(object):
         '''
         self._extra[key] = field
         setattr(self, key, value)
-
 
     def to_dict(self, serial=False):
         '''A dictionary representing the the data of the class is returned.

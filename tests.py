@@ -6,6 +6,7 @@ import uuid
 import micromodels
 from micromodels.models import json
 
+
 class ClassCreationTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -246,10 +247,7 @@ class DateTimeFieldTestCase(unittest.TestCase):
 
         self.assertEqual(expected, result)
 
-
     def test_iso8601_to_serial(self):
-        import datetime
-
         field = micromodels.DateTimeField()
         field.populate("2010-07-13T14:01:00Z")
         native = field.to_python()
@@ -272,7 +270,6 @@ class DateTimeFieldTestCase(unittest.TestCase):
         self.assertIsInstance(self.field.to_python(), datetime.datetime)
 
 
-
 class DateFieldTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -292,13 +289,13 @@ class DateFieldTestCase(unittest.TestCase):
         field = micromodels.DateField()
         field.populate("2010-12-28")
         result = field.to_python()
-        expected = datetime.date(2010,12,28)
+        expected = datetime.date(2010, 12, 28)
         self.assertEqual(expected, result)
 
         field = micromodels.DateField()
         field.populate("20101228")
         result = field.to_python()
-        expected = datetime.date(2010,12,28)
+        expected = datetime.date(2010, 12, 28)
         self.assertEqual(expected, result)
 
 
@@ -321,13 +318,13 @@ class TimeFieldTestCase(unittest.TestCase):
         field = micromodels.TimeField()
         field.populate("09:33:30")
         result = field.to_python()
-        expected = datetime.time(9,33,30)
+        expected = datetime.time(9, 33, 30)
         self.assertEqual(expected, result)
 
         field = micromodels.TimeField()
         field.populate("093331")
         result = field.to_python()
-        expected = datetime.time(9,33,31)
+        expected = datetime.time(9, 33, 31)
         self.assertEqual(expected, result)
 
 
@@ -524,6 +521,7 @@ class FieldCollectionFieldTestCase(unittest.TestCase):
         serial = p.to_dict(serial=True)
         self.assertEqual(serial['aliases'], data['aliases'])
         self.assertEqual(serial['events'][0], '01-30-2011')
+
 
 class ModelTestCase(unittest.TestCase):
 
