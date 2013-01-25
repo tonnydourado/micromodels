@@ -12,19 +12,37 @@ class BaseField(object):
     name as the key to retrieve the value from the source data.
 
     """
-    def __init__(self, source=None):
+    def __init__(self, source=None, default=None):
         self.source = source
+        self.default = default
 
     def populate(self, data):
         """Set the value or values wrapped by this field"""
 
         self.data = data
 
+    def get_default(self):
+        """Get the default value. If the default is callable, call it."""
+        if callable(self.default):
+            return self.default()
+        return self.default
+
     def to_python(self):
+        '''After being populated, this method casts the source data into a
+        Python object. If no data has been set, it returns the fields default
+        value.
+
+        '''
+        if self.data is None:
+            if self.default is None:
+                return None
+            self.populate(self.get_default())
+        return self._to_python()
+
+    def _to_python(self):
         '''After being populated, this method casts the source data into a
         Python object. The default behavior is to simply return the source
         value. Subclasses should override this method.
-
         '''
         return self.data
 
@@ -43,46 +61,40 @@ class BaseField(object):
 class CharField(BaseField):
     """Field to represent a simple Unicode string value."""
 
-    def to_python(self):
+    def _to_python(self):
         """Convert the data supplied using the :meth:`populate` method to a
         Unicode string.
 
         """
-        if self.data is None:
-            return ''
         return unicode(self.data)
 
 
 class IntegerField(BaseField):
     """Field to represent an integer value"""
 
-    def to_python(self):
+    def _to_python(self):
         """Convert the data supplied to the :meth:`populate` method to an
         integer.
 
         """
-        if self.data is None:
-            return 0
         return int(self.data)
 
 
 class FloatField(BaseField):
     """Field to represent a floating point value"""
 
-    def to_python(self):
+    def _to_python(self):
         """Convert the data supplied to the :meth:`populate` method to a
         float.
 
         """
-        if self.data is None:
-            return 0.0
         return float(self.data)
 
 
 class DecimalField(BaseField):
     """Field to represent a :mod:`decimal.Decimal`"""
 
-    def to_python(self):
+    def _to_python(self):
         if isinstance(self.data, decimal.Decimal):
             return self.data
         if isinstance(self.data, float):
@@ -93,7 +105,12 @@ class DecimalField(BaseField):
 class BooleanField(BaseField):
     """Field to represent a boolean"""
 
-    def to_python(self):
+    def populate(self, data):
+        # Explicitly cast the value to a bool when we populate the field
+        super(BooleanField, self).populate(data)
+        self.data = bool(self.to_python())
+
+    def _to_python(self):
         """The string ``'True'`` (case insensitive) will be converted
         to ``True``, as will any positive integers.
 
@@ -121,11 +138,8 @@ class DateTimeField(BaseField):
         self.format = format
         self.serial_format = serial_format
 
-    def to_python(self):
+    def _to_python(self):
         '''A :class:`datetime.datetime` object is returned.'''
-
-        if self.data is None:
-            return None
 
         # don't parse data that is already native
         if isinstance(self.data, datetime.datetime):
@@ -145,19 +159,19 @@ class DateTimeField(BaseField):
 class DateField(DateTimeField):
     """Field to represent a :mod:`datetime.date`"""
 
-    def to_python(self):
+    def _to_python(self):
         # don't parse data that is already native
         if isinstance(self.data, datetime.date):
             return self.data
 
-        dt = super(DateField, self).to_python()
+        dt = super(DateField, self)._to_python()
         return dt.date()
 
 
 class TimeField(DateTimeField):
     """Field to represent a :mod:`datetime.time`"""
 
-    def to_python(self):
+    def _to_python(self):
         # don't parse data that is already native
         if isinstance(self.data, datetime.datetime):
             return self.data
@@ -171,7 +185,7 @@ class TimeField(DateTimeField):
 class UUIDField(BaseField):
     """Field to represent a :mod:`uuid.UUID`"""
 
-    def to_python(self):
+    def _to_python(self):
         if isinstance(self.data, uuid.UUID):
             return self.data
         return uuid.UUID(self.data)
@@ -226,7 +240,7 @@ class ModelField(WrappedObjectField):
         u'Some nested value'
 
     """
-    def to_python(self):
+    def _to_python(self):
         if isinstance(self.data, self._wrapped_class):
             obj = self.data
         else:
@@ -275,7 +289,7 @@ class ModelCollectionField(WrappedObjectField):
         [u'First value', u'Second value', u'Third value']
 
     """
-    def to_python(self):
+    def _to_python(self):
         object_list = []
         for item in self.data:
             obj = self._wrapped_class.from_dict(item)
@@ -357,7 +371,7 @@ class FieldCollectionField(BaseField):
         super(FieldCollectionField, self).__init__(**kwargs)
         self._instance = field_instance
 
-    def to_python(self):
+    def _to_python(self):
         def convert(item):
             self._instance.populate(item)
             return self._instance.to_python()

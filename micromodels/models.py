@@ -100,7 +100,9 @@ class Model(object):
         for name, field in self._clsfields.iteritems():
             key = field.source or name
             if key in data:
-                setattr(self, name, data.get(key))
+                setattr(self, name, data[key])
+            else:
+                setattr(self, name, field.get_default())
 
     def __setattr__(self, key, value):
         if key in self._fields:
@@ -110,6 +112,15 @@ class Model(object):
             super(Model, self).__setattr__(key, field.to_python())
         else:
             super(Model, self).__setattr__(key, value)
+
+    def __getattr__(self, key):
+        # Lazily set the default when trying to access an attribute
+        # that has not otherwise been set.
+        if key in self._fields:
+            default = self._fields[key].get_default()
+            setattr(self, key, default)
+            return getattr(self, key)
+        raise AttributeError
 
     @property
     def _fields(self):
