@@ -4,6 +4,10 @@ import PySO8601
 import uuid
 
 
+class ValidationError(Exception):
+    pass
+
+
 class BaseField(object):
     """Base class for all field types.
 
@@ -12,9 +16,10 @@ class BaseField(object):
     name as the key to retrieve the value from the source data.
 
     """
-    def __init__(self, source=None, default=None):
+    def __init__(self, source=None, default=None, required=True):
         self.source = source
         self.default = default
+        self.required = required
 
     def populate(self, data):
         """Set the value or values wrapped by this field"""
@@ -56,6 +61,13 @@ class BaseField(object):
 
         '''
         return data
+
+    def validate(self):
+        '''The field is valid if we have a value or the field is not required'''
+        value = self.to_python()
+        if value is None and self.required:
+            raise ValidationError('This field is required.')
+        return True
 
 
 class CharField(BaseField):

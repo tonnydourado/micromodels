@@ -589,5 +589,36 @@ class ModelTestCase(unittest.TestCase):
         self.assertEqual(instance.to_dict()['birthday'], today)
 
 
+class ModelValidationTestCase(unittest.TestCase):
+    def setUp(self):
+        import datetime
+
+        class UserModel(micromodels.Model):
+            username = micromodels.CharField(required=True)
+            timestamp = micromodels.DateTimeField(default=datetime.datetime.utcnow, required=True)
+            age = micromodels.IntegerField(required=False)
+
+            def validate_age(self):
+                if self.age and self.age < 0:
+                    raise micromodels.ValidationError("You can't be less than zero years old.")
+
+        self.model = UserModel
+
+    def test_required_field(self):
+        instance = self.model.from_kwargs(username='user')
+        errors = instance.validate()
+        self.assertIsNone(errors)
+
+    def test_missing_required_field(self):
+        instance = self.model.from_kwargs()
+        errors = instance.validate()
+        self.assertEqual(errors, dict(username=['This field is required.']))
+
+    def test_invalid_field(self):
+        instance = self.model.from_kwargs(username='user', age=-4)
+        errors = instance.validate()
+        self.assertEqual(errors, dict(age=["You can't be less than zero years old."]))
+
+
 if __name__ == "__main__":
     unittest.main()

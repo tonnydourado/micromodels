@@ -3,7 +3,7 @@ try:
 except ImportError:
     import simplejson as json
 
-from .fields import BaseField
+from .fields import BaseField, ValidationError
 
 class Model(object):
     """The Model is the main component of micromodels. Model makes it trivial
@@ -157,3 +157,32 @@ class Model(object):
 
         '''
         return json.dumps(self.to_dict(serial=True))
+
+    def validate(self):
+        '''Run basic validation on the model. Returns an error dict if
+        validation fails or ``None`` if it passes.
+
+        For example:
+
+            m = MyModel.from_kwargs(foo='bar', fizz='buzz')
+            errors = m.validate()
+            if errors:
+                handle_errors()
+
+        '''
+
+        error_dict = {}
+        for name, field in self._fields.iteritems():
+            try:
+                field.validate()
+            except ValidationError, err:
+                error_dict.setdefault(name, [])
+                error_dict[name].append(err.message)
+            try:
+                getattr(self, 'validate_{0}'.format(name))()
+            except AttributeError:
+                continue
+            except ValidationError, err:
+                error_dict.setdefault(name, [])
+                error_dict[name].append(err.message)
+        return error_dict or None
