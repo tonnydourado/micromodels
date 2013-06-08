@@ -1,9 +1,32 @@
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
+from collections import OrderedDict
+from micromodels.fields import BaseField, ValidationError
 
-from .fields import BaseField
+
+def get_declared_fields(bases, attrs):
+    """
+    Create a list of model field instances from the passed in 'attrs', plus any
+    similar fields on the base classes (in 'bases').
+    """
+    fields = [(field_name, attrs.pop(field_name)) for field_name, obj in attrs.items() if isinstance(obj, BaseField)]
+    fields.sort(key=lambda x: x[1].creation_counter)
+
+    for base in bases[::-1]:
+        if hasattr(base, '_clsfields'):
+            fields = base._clsfields.items() + fields
+
+    return OrderedDict(fields)
+
+
+class ModelMeta(type):
+    ''' Creates the metaclass for Model. The main function of this metaclass
+        is to move all of fields into the _fields variable on the class.
+    '''
+    def __new__(cls, name, bases, attrs):
+        attrs['_clsfields'] = get_declared_fields(bases, attrs)
+        new_class = super(ModelMeta, cls).__new__(cls, name, bases, attrs)
+        return new_class
+
 
 class Model(object):
     """The Model is the main component of micromodels. Model makes it trivial
@@ -46,20 +69,10 @@ class Model(object):
     value are just set on the instance like any other assignment in Python.
 
     """
-    class __metaclass__(type):
-        '''Creates the metaclass for Model. The main function of this metaclass
-        is to move all of fields into the _fields variable on the class.
-
-        '''
-        def __init__(cls, name, bases, attrs):
-            cls._clsfields = {}
-            for key, value in attrs.iteritems():
-                if isinstance(value, BaseField):
-                    cls._clsfields[key] = value
-                    delattr(cls, key)
+    __metaclass__ = ModelMeta
 
     def __init__(self):
-        super(Model, self).__setattr__('_extra', {})
+        super(Model, self).__setattr__('_extra', OrderedDict())
 
     @classmethod
     def from_dict(cls, D, is_json=False):
@@ -91,6 +104,8 @@ class Model(object):
             key = field.source or name
             if key in data:
                 setattr(self, name, data.get(key))
+            else:
+                setattr(self, name, field.get_default())
 
     def __setattr__(self, key, value):
         if key in self._fields:
@@ -101,9 +116,19 @@ class Model(object):
         else:
             super(Model, self).__setattr__(key, value)
 
+    def __getattr__(self, key):
+        # Lazily set the default when trying to access an attribute
+        # that has not otherwise been set.
+        if key in self._fields:
+            default = self._fields[key].get_default()
+            setattr(self, key, default)
+            return getattr(self, key)
+        raise AttributeError('Object "{0}" has no attribute "{1}"'.format(
+            self.__class__.__name__, key))
+
     @property
     def _fields(self):
-        return dict(self._clsfields, **self._extra)
+        return OrderedDict(self._clsfields, **self._extra)
 
     def add_field(self, key, value, field):
         ''':meth:`add_field` must be used to add a field to an existing
@@ -114,7 +139,6 @@ class Model(object):
         '''
         self._extra[key] = field
         setattr(self, key, value)
-
 
     def to_dict(self, serial=False):
         '''A dictionary representing the the data of the class is returned.
@@ -136,3 +160,32 @@ class Model(object):
 
         '''
         return json.dumps(self.to_dict(serial=True))
+
+    def validate(self):
+        '''Run basic validation on the model. Returns an error dict if
+        validation fails or ``None`` if it passes.
+
+        For example:
+
+            m = MyModel.from_kwargs(foo='bar', fizz='buzz')
+            errors = m.validate()
+            if errors:
+                handle_errors()
+
+        '''
+
+        error_dict = {}
+        for name, field in self._fields.iteritems():
+            try:
+                field.validate()
+            except ValidationError, err:
+                error_dict.setdefault(name, [])
+                error_dict[name].append(err.message)
+            try:
+                getattr(self, 'validate_{0}'.format(name))()
+            except AttributeError:
+                continue
+            except ValidationError, err:
+                error_dict.setdefault(name, [])
+                error_dict[name].append(err.message)
+        return error_dict or None

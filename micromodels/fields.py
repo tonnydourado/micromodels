@@ -1,5 +1,16 @@
 import datetime
+import decimal
+import uuid
 import PySO8601
+
+
+class ValidationError(Exception):
+    pass
+
+
+def required_validator(value):
+    if value is None:
+        raise ValidationError('This field is required.')
 
 
 class BaseField(object):
@@ -10,13 +21,37 @@ class BaseField(object):
     name as the key to retrieve the value from the source data.
 
     """
-    def __init__(self, source=None):
+
+    # Tracks each time a BaseField instance is created. Used to retain order.
+    creation_counter = 0
+    builtin_validators = []
+
+    def __init__(self, source=None, default=None, required=True, validators=None):
         self.source = source
+        self.default = default
+
+        self.validators = []
+        if required:
+            self.validators.append(required_validator)
+        self.validators.extend(self.builtin_validators)
+        if validators:
+            self.validators.extend(validators)
+
+        # Increase the creation counter, and save our local copy.
+        self.creation_counter = BaseField.creation_counter
+        BaseField.creation_counter += 1
 
     def populate(self, data):
         """Set the value or values wrapped by this field"""
-
+        if callable(data):
+            data = data()
         self.data = data
+
+    def get_default(self):
+        """Get the default value. If the default is callable, call it."""
+        if callable(self.default):
+            return self.default()
+        return self.default
 
     def to_python(self):
         '''After being populated, this method casts the source data into a
@@ -24,6 +59,11 @@ class BaseField(object):
         value. Subclasses should override this method.
 
         '''
+        if self.data is None:
+            return self.get_default()
+        return self._to_python()
+
+    def _to_python(self):
         return self.data
 
     def to_serial(self, data):
@@ -35,52 +75,69 @@ class BaseField(object):
         override this method.
 
         '''
+        if data is None:
+            return data
+        return self._to_serial(data)
+
+    def _to_serial(self, data):
         return data
+
+    def validate(self):
+        value = self.to_python()
+        for validator in self.validators:
+            rvalue = validator(value)
+            value = value if rvalue is None else rvalue
+        return value
 
 
 class CharField(BaseField):
     """Field to represent a simple Unicode string value."""
 
-    def to_python(self):
+    def _to_python(self):
         """Convert the data supplied using the :meth:`populate` method to a
         Unicode string.
 
         """
-        if self.data is None:
-            return ''
         return unicode(self.data)
 
 
 class IntegerField(BaseField):
     """Field to represent an integer value"""
 
-    def to_python(self):
+    def _to_python(self):
         """Convert the data supplied to the :meth:`populate` method to an
         integer.
 
         """
-        if self.data is None:
-            return 0
         return int(self.data)
 
 
 class FloatField(BaseField):
     """Field to represent a floating point value"""
 
-    def to_python(self):
+    def _to_python(self):
         """Convert the data supplied to the :meth:`populate` method to a
         float.
 
         """
-        if self.data is None:
-            return 0.0
         return float(self.data)
+
+
+class DecimalField(BaseField):
+    """Field to represent a :mod:`decimal.Decimal`"""
+
+    def _to_python(self):
+        if isinstance(self.data, decimal.Decimal):
+            return self.data
+        if isinstance(self.data, float):
+            return decimal.Decimal(repr(self.data))
+        return decimal.Decimal(self.data)
 
 
 class BooleanField(BaseField):
     """Field to represent a boolean"""
 
-    def to_python(self):
+    def _to_python(self):
         """The string ``'True'`` (case insensitive) will be converted
         to ``True``, as will any positive integers.
 
@@ -108,12 +165,8 @@ class DateTimeField(BaseField):
         self.format = format
         self.serial_format = serial_format
 
-    def to_python(self):
+    def _to_python(self):
         '''A :class:`datetime.datetime` object is returned.'''
-
-        if self.data is None:
-            return None
-
         # don't parse data that is already native
         if isinstance(self.data, datetime.datetime):
             return self.data
@@ -123,27 +176,28 @@ class DateTimeField(BaseField):
         else:
             return datetime.datetime.strptime(self.data, self.format)
 
-    def to_serial(self, time_obj):
+    def _to_serial(self, time_obj):
         if not self.serial_format:
             return time_obj.isoformat()
         return time_obj.strftime(self.serial_format)
 
+
 class DateField(DateTimeField):
     """Field to represent a :mod:`datetime.date`"""
 
-    def to_python(self):
+    def _to_python(self):
         # don't parse data that is already native
         if isinstance(self.data, datetime.date):
             return self.data
-        
-        dt = super(DateField, self).to_python()
+
+        dt = super(DateField, self)._to_python()
         return dt.date()
 
 
 class TimeField(DateTimeField):
     """Field to represent a :mod:`datetime.time`"""
 
-    def to_python(self):
+    def _to_python(self):
         # don't parse data that is already native
         if isinstance(self.data, datetime.datetime):
             return self.data
@@ -152,6 +206,18 @@ class TimeField(DateTimeField):
             return PySO8601.parse_time(self.data).time()
         else:
             return datetime.datetime.strptime(self.data, self.format).time()
+
+
+class UUIDField(BaseField):
+    """Field to represent a :mod:`uuid.UUID`"""
+
+    def _to_python(self):
+        if isinstance(self.data, uuid.UUID):
+            return self.data
+        return uuid.UUID(self.data)
+
+    def _to_serial(self, uuid_obj):
+        return uuid_obj.hex
 
 
 class WrappedObjectField(BaseField):
@@ -200,7 +266,7 @@ class ModelField(WrappedObjectField):
         u'Some nested value'
 
     """
-    def to_python(self):
+    def _to_python(self):
         if isinstance(self.data, self._wrapped_class):
             obj = self.data
         else:
@@ -212,7 +278,7 @@ class ModelField(WrappedObjectField):
 
         return obj
 
-    def to_serial(self, model_instance):
+    def _to_serial(self, model_instance):
         return model_instance.to_dict(serial=True)
 
 
