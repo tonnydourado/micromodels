@@ -58,9 +58,9 @@ class CharFieldTestCase(unittest.TestCase):
         self.assertEqual(self.field.to_python(), 'somestring')
 
     def test_none_conversion(self):
-        """CharField should convert None to empty string"""
+        """CharField should preserve None"""
         self.field.populate(None)
-        self.assertEqual(self.field.to_python(), '')
+        self.assertEqual(self.field.to_python(), None)
 
 
 class IntegerFieldTestCase(unittest.TestCase):
@@ -81,9 +81,9 @@ class IntegerFieldTestCase(unittest.TestCase):
         self.assertEqual(self.field.to_python(), 123)
 
     def test_none_conversion(self):
-        """IntegerField should convert None to 0"""
+        """IntegerField should preserve None"""
         self.field.populate(None)
-        self.assertEqual(self.field.to_python(), 0)
+        self.assertEqual(self.field.to_python(), None)
 
 
 class FloatFieldTestCase(unittest.TestCase):
@@ -104,9 +104,9 @@ class FloatFieldTestCase(unittest.TestCase):
         self.assertEqual(self.field.to_python(), 123.4)
 
     def test_none_conversion(self):
-        """FloatField should convert None to 0.0"""
+        """FloatField should preserve None"""
         self.field.populate(None)
-        self.assertEqual(self.field.to_python(), 0.0)
+        self.assertEqual(self.field.to_python(), None)
 
 
 class BooleanFieldTestCase(unittest.TestCase):
@@ -160,7 +160,7 @@ class DateTimeFieldTestCase(unittest.TestCase):
     def test_iso8601_conversion(self):
         import datetime
         from PySO8601 import Timezone
-        
+
         field = micromodels.DateTimeField()
         field.populate("2010-07-13T14:01:00Z")
         result = field.to_python()
@@ -189,7 +189,7 @@ class DateTimeFieldTestCase(unittest.TestCase):
 
     def test_iso8601_to_serial(self):
         import datetime
-        
+
         field = micromodels.DateTimeField()
         field.populate("2010-07-13T14:01:00Z")
         native = field.to_python()
@@ -322,11 +322,11 @@ class ModelFieldTestCase(unittest.TestCase):
         class Post(micromodels.Model):
             title = micromodels.CharField()
             author = micromodels.ModelField(User, related_name="post")
-        
+
         data = {'title': 'Test Post', 'author': {'name': 'Eric Martin'}}
         post = Post.from_dict(data)
         self.assertEqual(post.author.post, post)
-        self.assertEqual(post.to_dict(serial=True), data)        
+        self.assertEqual(post.to_dict(serial=True), data)
 
     def test_failing_modelfield(self):
         class SomethingExceptional(Exception):
@@ -346,7 +346,7 @@ class ModelFieldTestCase(unittest.TestCase):
         data = {'title': 'Test Post', 'author': {'name': 'Eric Martin'}}
         self.assertRaises(SomethingExceptional, Post.from_dict,
                           data)
-                           
+
 
 class ModelCollectionFieldTestCase(unittest.TestCase):
 
@@ -418,7 +418,7 @@ class ModelCollectionFieldTestCase(unittest.TestCase):
             self.assertEqual(post.author, eric)
 
         self.assertEqual(processed, data)
-        
+
 
 class FieldCollectionFieldTestCase(unittest.TestCase):
 
@@ -494,7 +494,7 @@ class ModelTestCase(unittest.TestCase):
 
     def test_model_late_assignment(self):
         instance = self.Person.from_dict(dict(name='Eric'))
-        self.assertEqual(instance.to_dict(), dict(name='Eric'))
+        self.assertEqual(instance.to_dict(), dict(name='Eric', age=None))
         instance.age = 18
         self.assertEqual(instance.to_dict(), self.data)
         instance.name = 'John'
