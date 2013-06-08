@@ -29,6 +29,8 @@ setup(
     author_email='jamie.matthews@gmail.com',
     license='Public Domain',
     install_requires=["PySO8601"],
+    tests_require=["nose"],
+    test_suite = 'nose.collector',
     classifiers = [
         'Programming Language :: Python',
         'Development Status :: 3 - Alpha',
