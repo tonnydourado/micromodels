@@ -103,7 +103,7 @@ class Model(object):
         for name, field in self._clsfields.iteritems():
             key = field.source or name
             if key in data:
-                setattr(self, name, data.get(key))
+                setattr(self, name, data[key])
             else:
                 setattr(self, name, field.get_default())
 

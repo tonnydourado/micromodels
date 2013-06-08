@@ -1,8 +1,11 @@
 from datetime import date
+import decimal
 import unittest
+import uuid
 
 import micromodels
 from micromodels.models import json
+
 
 class ClassCreationTestCase(unittest.TestCase):
 
@@ -10,6 +13,7 @@ class ClassCreationTestCase(unittest.TestCase):
         class SimpleModel(micromodels.Model):
             name = micromodels.CharField()
             field_with_source = micromodels.CharField(source='foo')
+            field_with_default = micromodels.DateField(default=date.today)
         self.model_class = SimpleModel
         self.instance = SimpleModel()
 
@@ -32,6 +36,10 @@ class ClassCreationTestCase(unittest.TestCase):
     def test_field_source_set(self):
         """Field with custom source specificied should have source property set correctly"""
         self.assertEqual(self.instance._fields['field_with_source'].source, 'foo')
+
+    def test_field_default(self):
+        """Field with a default value has that default value populated on the Model"""
+        self.assertEqual(self.instance.field_with_default, date.today())
 
 
 class BaseFieldTestCase(unittest.TestCase):
@@ -57,10 +65,16 @@ class CharFieldTestCase(unittest.TestCase):
         self.field.populate('somestring')
         self.assertEqual(self.field.to_python(), 'somestring')
 
-    def test_none_conversion(self):
-        """CharField should preserve None"""
+    def test_none_conversion_without_default(self):
+        """CharField should return None when no default is set"""
         self.field.populate(None)
         self.assertEqual(self.field.to_python(), None)
+
+    def test_none_conversion_with_default(self):
+        """CharField should convert None to empty string"""
+        self.field.default = ''
+        self.field.populate(None)
+        self.assertEqual(self.field.to_python(), '')
 
 
 class IntegerFieldTestCase(unittest.TestCase):
@@ -80,10 +94,16 @@ class IntegerFieldTestCase(unittest.TestCase):
         self.field.populate('123')
         self.assertEqual(self.field.to_python(), 123)
 
-    def test_none_conversion(self):
-        """IntegerField should preserve None"""
+    def test_none_conversion_without_default(self):
+        """IntegerField should return None when no default is set"""
         self.field.populate(None)
         self.assertEqual(self.field.to_python(), None)
+
+    def test_default(self):
+        """IntegerField should convert None to default value"""
+        self.field.default = 1220
+        self.field.populate(None)
+        self.assertEqual(self.field.to_python(), 1220)
 
 
 class FloatFieldTestCase(unittest.TestCase):
@@ -103,10 +123,43 @@ class FloatFieldTestCase(unittest.TestCase):
         self.field.populate('123.4')
         self.assertEqual(self.field.to_python(), 123.4)
 
-    def test_none_conversion(self):
-        """FloatField should preserve None"""
+    def test_none_conversion_without_default(self):
+        """FloatField should return None when no default is set"""
         self.field.populate(None)
         self.assertEqual(self.field.to_python(), None)
+
+    def test_none_conversion_with_default(self):
+        """FloatField should convert None to 0.0"""
+        self.field.default = 0.0
+        self.field.populate(None)
+        self.assertEqual(self.field.to_python(), 0.0)
+
+
+class DecimalFieldTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.field = micromodels.DecimalField()
+
+    def test_string_conversion(self):
+        self.field.populate('3.14')
+        self.assertEqual(self.field.to_python(), decimal.Decimal('3.14'))
+
+    def test_integer_conversion(self):
+        self.field.populate(42)
+        self.assertEqual(self.field.to_python(), decimal.Decimal(42))
+
+    def test_float_conversion(self):
+        self.field.populate(3.14)
+        self.assertEqual(self.field.to_python(), decimal.Decimal('3.14'))
+
+    def test_none_conversion_without_default(self):
+        self.field.populate(None)
+        self.assertEqual(self.field.to_python(), None)
+
+    def test_none_conversion_with_default(self):
+        self.field.default = '1.23'
+        self.field.populate(None)
+        self.assertEqual(self.field.to_python(), decimal.Decimal('1.23'))
 
 
 class BooleanFieldTestCase(unittest.TestCase):
@@ -142,13 +195,23 @@ class BooleanFieldTestCase(unittest.TestCase):
         self.field.populate(100)
         self.assertEqual(self.field.to_python(), True)
 
+    def test_none_conversion_without_default(self):
+        self.field.populate(None)
+        self.assertEqual(self.field.to_python(), False)
+
+    def test_none_conversion_with_default(self):
+        self.field.default = True
+        self.field.populate(None)
+        self.assertEqual(self.field.to_python(), True)
+
 
 class DateTimeFieldTestCase(unittest.TestCase):
 
     def setUp(self):
+        import datetime
         self.format = "%a %b %d %H:%M:%S +0000 %Y"
         self.datetimestring = "Tue Mar 21 20:50:14 +0000 2006"
-        self.field = micromodels.DateTimeField(format=self.format)
+        self.field = micromodels.DateTimeField(format=self.format, default=datetime.datetime.utcnow)
 
     def test_format_conversion(self):
         import datetime
@@ -168,7 +231,6 @@ class DateTimeFieldTestCase(unittest.TestCase):
                                      tzinfo=Timezone())
         self.assertEqual(expected, result)
 
-
         field = micromodels.DateTimeField()
         field.populate("2010-07-13T14:02:00-05:00")
         result = field.to_python()
@@ -176,7 +238,6 @@ class DateTimeFieldTestCase(unittest.TestCase):
                                      tzinfo=Timezone("-05:00"))
 
         self.assertEqual(expected, result)
-
 
         field = micromodels.DateTimeField()
         field.populate("20100713T140200-05:00")
@@ -186,10 +247,7 @@ class DateTimeFieldTestCase(unittest.TestCase):
 
         self.assertEqual(expected, result)
 
-
     def test_iso8601_to_serial(self):
-        import datetime
-
         field = micromodels.DateTimeField()
         field.populate("2010-07-13T14:01:00Z")
         native = field.to_python()
@@ -205,6 +263,11 @@ class DateTimeFieldTestCase(unittest.TestCase):
         result = field.to_serial(native)
 
         self.assertEqual(expected, result)
+
+    def test_none_conversion(self):
+        import datetime
+        self.field.populate(None)
+        self.assertIsInstance(self.field.to_python(), datetime.datetime)
 
 
 class DateFieldTestCase(unittest.TestCase):
@@ -226,13 +289,13 @@ class DateFieldTestCase(unittest.TestCase):
         field = micromodels.DateField()
         field.populate("2010-12-28")
         result = field.to_python()
-        expected = datetime.date(2010,12,28)
+        expected = datetime.date(2010, 12, 28)
         self.assertEqual(expected, result)
 
         field = micromodels.DateField()
         field.populate("20101228")
         result = field.to_python()
-        expected = datetime.date(2010,12,28)
+        expected = datetime.date(2010, 12, 28)
         self.assertEqual(expected, result)
 
 
@@ -255,13 +318,13 @@ class TimeFieldTestCase(unittest.TestCase):
         field = micromodels.TimeField()
         field.populate("09:33:30")
         result = field.to_python()
-        expected = datetime.time(9,33,30)
+        expected = datetime.time(9, 33, 30)
         self.assertEqual(expected, result)
 
         field = micromodels.TimeField()
         field.populate("093331")
         result = field.to_python()
-        expected = datetime.time(9,33,31)
+        expected = datetime.time(9, 33, 31)
         self.assertEqual(expected, result)
 
 
@@ -287,6 +350,16 @@ class InstanceTestCase(unittest.TestCase):
         instance = CustomSourceModel.from_dict(data)
 
         self.assertEqual(instance.first, data['custom_source'])
+
+
+class UUIDFieldTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.field = micromodels.UUIDField()
+
+    def test_string_conversion(self):
+        self.field.populate('101469a9-4adb-492a-9d7f-88c9c039ceb4')
+        self.assertIsInstance(self.field.to_python(), uuid.UUID)
 
 
 class ModelFieldTestCase(unittest.TestCase):
@@ -449,6 +522,7 @@ class FieldCollectionFieldTestCase(unittest.TestCase):
         self.assertEqual(serial['aliases'], data['aliases'])
         self.assertEqual(serial['events'][0], '01-30-2011')
 
+
 class ModelTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -511,6 +585,37 @@ class ModelTestCase(unittest.TestCase):
         self.assertEqual(instance.to_dict()['birthday'], today)
         instance.birthday = today
         self.assertEqual(instance.to_dict()['birthday'], today)
+
+
+class ModelValidationTestCase(unittest.TestCase):
+    def setUp(self):
+        import datetime
+
+        class UserModel(micromodels.Model):
+            username = micromodels.CharField(required=True)
+            timestamp = micromodels.DateTimeField(default=datetime.datetime.utcnow, required=True)
+            age = micromodels.IntegerField(required=False)
+
+            def validate_age(self):
+                if self.age and self.age < 0:
+                    raise micromodels.ValidationError("You can't be less than zero years old.")
+
+        self.model = UserModel
+
+    def test_required_field(self):
+        instance = self.model.from_kwargs(username='user')
+        errors = instance.validate()
+        self.assertIsNone(errors)
+
+    def test_missing_required_field(self):
+        instance = self.model.from_kwargs()
+        errors = instance.validate()
+        self.assertEqual(errors, dict(username=['This field is required.']))
+
+    def test_invalid_field(self):
+        instance = self.model.from_kwargs(username='user', age=-4)
+        errors = instance.validate()
+        self.assertEqual(errors, dict(age=["You can't be less than zero years old."]))
 
 
 if __name__ == "__main__":

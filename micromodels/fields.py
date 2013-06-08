@@ -2,6 +2,11 @@ import datetime
 import decimal
 import uuid
 import PySO8601
+import uuid
+
+
+class ValidationError(Exception):
+    pass
 
 
 class ValidationError(Exception):
@@ -55,9 +60,20 @@ class BaseField(object):
 
     def to_python(self):
         '''After being populated, this method casts the source data into a
+        Python object. If no data has been set, it returns the fields default
+        value.
+
+        '''
+        if self.data is None:
+            if self.default is None:
+                return None
+            self.populate(self.get_default())
+        return self._to_python()
+
+    def _to_python(self):
+        '''After being populated, this method casts the source data into a
         Python object. The default behavior is to simply return the source
         value. Subclasses should override this method.
-
         '''
         if self.data is None:
             return self.get_default()
@@ -136,6 +152,11 @@ class DecimalField(BaseField):
 
 class BooleanField(BaseField):
     """Field to represent a boolean"""
+
+    def populate(self, data):
+        # Explicitly cast the value to a bool when we populate the field
+        super(BooleanField, self).populate(data)
+        self.data = bool(self.to_python())
 
     def _to_python(self):
         """The string ``'True'`` (case insensitive) will be converted
@@ -315,7 +336,7 @@ class ModelCollectionField(WrappedObjectField):
         [u'First value', u'Second value', u'Third value']
 
     """
-    def to_python(self):
+    def _to_python(self):
         object_list = []
         for item in self.data:
             obj = self._wrapped_class.from_dict(item)
@@ -397,7 +418,7 @@ class FieldCollectionField(BaseField):
         super(FieldCollectionField, self).__init__(**kwargs)
         self._instance = field_instance
 
-    def to_python(self):
+    def _to_python(self):
         def convert(item):
             self._instance.populate(item)
             return self._instance.to_python()
