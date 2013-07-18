@@ -1,8 +1,8 @@
 import datetime
 import decimal
-import uuid
 import PySO8601
 import uuid
+import json
 
 
 class ValidationError(Exception):
@@ -34,6 +34,7 @@ class BaseField(object):
     def __init__(self, source=None, default=None, required=True, validators=None):
         self.source = source
         self.default = default
+        self.required = required
 
         self.validators = []
         if required:
@@ -239,6 +240,18 @@ class UUIDField(BaseField):
 
     def _to_serial(self, uuid_obj):
         return uuid_obj.hex
+
+
+class JSONField(BaseField):
+    """Field to represent a dict or list as a JSON string."""
+
+    def _to_python(self):
+        if isinstance(self.data, basestring):
+            return json.loads(self.data)
+        return self.data
+
+    def _to_serial(self, obj):
+        return json.dumps(obj)
 
 
 class WrappedObjectField(BaseField):

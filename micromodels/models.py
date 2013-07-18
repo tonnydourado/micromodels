@@ -71,8 +71,11 @@ class Model(object):
     """
     __metaclass__ = ModelMeta
 
-    def __init__(self):
+    def __init__(self, **values):
         super(Model, self).__setattr__('_extra', OrderedDict())
+        super(Model, self).__init__()
+        if values:
+            self.set_data(values)
 
     @classmethod
     def from_dict(cls, D, is_json=False):
@@ -119,12 +122,14 @@ class Model(object):
     def __getattr__(self, key):
         # Lazily set the default when trying to access an attribute
         # that has not otherwise been set.
-        if key in self._fields:
-            default = self._fields[key].get_default()
-            setattr(self, key, default)
-            return getattr(self, key)
-        raise AttributeError('Object "{0}" has no attribute "{1}"'.format(
-            self.__class__.__name__, key))
+        fields = object.__getattribute__(self, '_clsfields')
+        extra = object.__getattribute__(self, '_extra')
+        field = fields.get(key) or extra.get(key)
+        if field:
+            value = field.to_python()
+            setattr(self, key, value)
+            return value
+        return object.__getattribute__(self, key)
 
     @property
     def _fields(self):
