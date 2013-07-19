@@ -76,11 +76,6 @@ class BaseField(object):
         Python object. The default behavior is to simply return the source
         value. Subclasses should override this method.
         '''
-        if self.data is None:
-            return self.get_default()
-        return self._to_python()
-
-    def _to_python(self):
         return self.data
 
     def to_serial(self, data):
