@@ -9,10 +9,6 @@ class ValidationError(Exception):
     pass
 
 
-class ValidationError(Exception):
-    pass
-
-
 def required_validator(value):
     if value is None:
         raise ValidationError('This field is required.')
@@ -434,3 +430,11 @@ class FieldCollectionField(BaseField):
 
     def to_serial(self, list_of_fields):
         return [self._instance.to_serial(data) for data in list_of_fields]
+
+
+class FileField(BaseField):
+    '''
+    A field representing a file. It is up to your datastore to properly
+    serialize and deserialize
+    '''
+    pass
