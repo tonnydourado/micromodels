@@ -65,7 +65,7 @@ class BaseField(object):
         value.
 
         '''
-        if self.data is None:
+        if not hasattr(self, 'data') or self.data is None:
             if self.default is None:
                 return None
             self.populate(self.get_default())
