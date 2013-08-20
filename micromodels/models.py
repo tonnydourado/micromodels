@@ -1,4 +1,5 @@
 import json
+from copy import copy
 from collections import OrderedDict
 from micromodels.fields import BaseField, ValidationError
 
@@ -8,7 +9,12 @@ def get_declared_fields(bases, attrs):
     Create a list of model field instances from the passed in 'attrs', plus any
     similar fields on the base classes (in 'bases').
     """
-    fields = [(field_name, attrs.pop(field_name)) for field_name, obj in attrs.items() if isinstance(obj, BaseField)]
+    fields = list()
+    for field_name, obj in attrs.items():
+        if isinstance(obj, BaseField):
+            if not obj.verbose_name:
+                obj.verbose_name = field_name
+            fields.append((field_name, attrs.pop(field_name)))
     fields.sort(key=lambda x: x[1].creation_counter)
 
     for base in bases[::-1]:
@@ -74,6 +80,9 @@ class Model(object):
     def __init__(self, **values):
         super(Model, self).__setattr__('_extra', OrderedDict())
         super(Model, self).__init__()
+        self._clsfields = OrderedDict(
+            [(key, copy(field)) for key, field in self._clsfields.items()]
+        )
         if values:
             self.set_data(values)
 

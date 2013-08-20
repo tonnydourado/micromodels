@@ -27,10 +27,14 @@ class BaseField(object):
     creation_counter = 0
     builtin_validators = []
 
-    def __init__(self, source=None, default=None, required=True, validators=None):
+    def __init__(self, source=None, default=None, required=True,
+            help_text=None, verbose_name=None, validators=None):
         self.source = source
         self.default = default
         self.required = required
+
+        self.help_text = help_text
+        self.verbose_name = verbose_name
 
         self.validators = []
         if required:
@@ -350,7 +354,7 @@ class ModelCollectionField(WrappedObjectField):
 
         return object_list
 
-    def to_serial(self, model_instances):
+    def _to_serial(self, model_instances):
         return [instance.to_dict(serial=True) for instance in model_instances]
 
 
@@ -428,7 +432,7 @@ class FieldCollectionField(BaseField):
             return self._instance.to_python()
         return [convert(item) for item in self.data or []]
 
-    def to_serial(self, list_of_fields):
+    def _to_serial(self, list_of_fields):
         return [self._instance.to_serial(data) for data in list_of_fields]
 
 
