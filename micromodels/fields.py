@@ -347,7 +347,10 @@ class ModelCollectionField(WrappedObjectField):
     def _to_python(self):
         object_list = []
         for item in self.data:
-            obj = self._wrapped_class.from_dict(item)
+            if isinstance(item, self._wrapped_class):
+                obj = item
+            else:
+                obj = self._wrapped_class.from_dict(item)
             if self._related_name is not None:
                 setattr(obj, self._related_name, self._related_obj)
             object_list.append(obj)
