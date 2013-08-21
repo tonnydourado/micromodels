@@ -464,11 +464,4 @@ class FileField(BaseField):
     A field representing a file. It is up to your datastore to properly
     serialize and deserialize
     '''
-    def set_serializer(self, func):
-        #the downside to this is that it is model wide
-        self._serializer = func
-
-    def _to_serial(self, data):
-        if hasattr(self, '_serializer'):
-            return self._serializer(data)
-        return data
+    pass
