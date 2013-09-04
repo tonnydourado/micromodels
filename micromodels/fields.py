@@ -315,6 +315,10 @@ class ModelField(WrappedObjectField):
         u'Some nested value'
 
     """
+    def __init__(self, wrapped_class, *args, **kwargs):
+        kwargs.setdefault('default', wrapped_class)
+        super(ModelField, self).__init__(wrapped_class, *args, **kwargs)
+
     def _to_python(self):
         if isinstance(self.data, self._wrapped_class):
             obj = self.data
@@ -364,6 +368,10 @@ class ModelCollectionField(WrappedObjectField):
         [u'First value', u'Second value', u'Third value']
 
     """
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('default', list)
+        super(ModelCollectionField, self).__init__(*args, **kwargs)
+
     def _to_python(self):
         object_list = []
         for item in self.data:
@@ -446,6 +454,7 @@ class FieldCollectionField(BaseField):
 
     """
     def __init__(self, field_instance, **kwargs):
+        kwargs.setdefault('default', list)
         super(FieldCollectionField, self).__init__(**kwargs)
         self._instance = field_instance
 
