@@ -4,4 +4,4 @@ from micromodels.fields import BaseField, CharField, IntegerField, FloatField,\
                     ModelField, ModelCollectionField, FieldCollectionField,\
                     UUIDField, DecimalField, FileField, ValidationError
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
