@@ -47,31 +47,11 @@ class BaseField(object):
         self.creation_counter = BaseField.creation_counter
         BaseField.creation_counter += 1
 
-        self.hooks = dict()
-
-    def set_hook(self, hook, callback):
-        '''
-        Set a callback for post processing data in an event. Events are:
-
-            * populate
-            * to_python
-            * to_serial
-
-        In this way a collection may implement more complex handling like file
-        serialization.
-        '''
-        self.hooks[hook] = callback
-
-    def execute_hook(self, hook, value):
-        if hook in self.hooks:
-            return self.hooks[hook](value)
-        return value
-
     def populate(self, data):
         """Set the value or values wrapped by this field"""
         if callable(data):
             data = data()
-        self.data = self.execute_hook('populate', data)
+        self.data = data
 
     def get_default(self):
         """Get the default value. If the default is callable, call it."""
@@ -89,7 +69,8 @@ class BaseField(object):
             if self.default is None:
                 return None
             self.populate(self.get_default())
-        return self.execute_hook('to_python', self._to_python())
+        assert hasattr(self, 'data')
+        return self._to_python()
 
     def _to_python(self):
         '''After being populated, this method casts the source data into a
@@ -109,7 +90,7 @@ class BaseField(object):
         '''
         if data is None:
             return data
-        return self.execute_hook('to_serial', self._to_serial(data))
+        return self._to_serial(data)
 
     def _to_serial(self, data):
         return data
@@ -472,5 +453,21 @@ class FileField(BaseField):
     '''
     A field representing a file. It is up to your datastore to properly
     serialize and deserialize
+    '''
+    pass
+
+
+class uri(unicode):
+    pass
+
+
+class URIField(CharField):
+    def _to_python(self):
+        return uri(self.data)
+
+
+class URIFileFIeld(URIField):
+    '''
+    Field to represent a file object located on a URI
     '''
     pass
