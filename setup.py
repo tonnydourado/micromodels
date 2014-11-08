@@ -28,7 +28,7 @@ setup(
     author='Jamie Matthews',
     author_email='jamie.matthews@gmail.com',
     license='Public Domain',
-    install_requires=["PySO8601"],
+    install_requires=["arrow"],
     tests_require=["nose"],
     test_suite = 'nose.collector',
     classifiers = [

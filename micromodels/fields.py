@@ -1,6 +1,6 @@
 import datetime
 import decimal
-import PySO8601
+import arrow
 import uuid
 import json
 
@@ -190,7 +190,7 @@ class DateTimeField(BaseField):
             return self.data
         elif self.format is None:
             # parse as iso8601
-            return PySO8601.parse(self.data)
+            return arrow.get(self.data)
         else:
             return datetime.datetime.strptime(self.data, self.format)
 
@@ -221,7 +221,7 @@ class TimeField(DateTimeField):
             return self.data
         elif self.format is None:
             # parse as iso8601
-            return PySO8601.parse_time(self.data).time()
+            return arrow.get(self.data).time()
         else:
             return datetime.datetime.strptime(self.data, self.format).time()
 
@@ -457,7 +457,7 @@ class FileField(BaseField):
     pass
 
 
-class uri(unicode):
+class uri(str):
     pass
 
 
