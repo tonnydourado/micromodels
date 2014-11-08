@@ -2,17 +2,19 @@ import os
 import re
 from setuptools import setup, find_packages
 
-rel_file = lambda *args: os.path.join(os.path.dirname(os.path.abspath(__file__)), *args)
+
+def rel_file(*args):
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), *args)
+
 
 def read_from(filename):
-    fp = open(filename)
-    try:
-        return fp.read()
-    finally:
-        fp.close()
+    with open(filename) as f:
+        return f.read()
+
 
 def get_long_description():
     return read_from(rel_file('README.md'))
+
 
 def get_version():
     data = read_from(rel_file('micromodels', '__init__.py'))
@@ -30,8 +32,8 @@ setup(
     license='Public Domain',
     install_requires=["arrow"],
     tests_require=["nose"],
-    test_suite = 'nose.collector',
-    classifiers = [
+    test_suite='nose.collector',
+    classifiers=[
         'Programming Language :: Python',
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
