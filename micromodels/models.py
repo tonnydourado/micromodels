@@ -192,14 +192,14 @@ class Model(object):
         for name, field in self._fields.iteritems():
             try:
                 field.validate()
-            except ValidationError, err:
+            except ValidationError as err:
                 error_dict.setdefault(name, [])
                 error_dict[name].append(err.message)
             try:
                 getattr(self, 'validate_{0}'.format(name))()
             except AttributeError:
                 continue
-            except ValidationError, err:
+            except ValidationError as err:
                 error_dict.setdefault(name, [])
                 error_dict[name].append(err.message)
         return error_dict or None
