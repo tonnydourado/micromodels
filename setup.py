@@ -1,6 +1,20 @@
 import os
 import re
 from setuptools import setup, find_packages
+from setuptools.command.test import test as TestCommand
+
+
+# Inspired by the example at https://pytest.org/latest/goodpractises.html
+class NoseTestCommand(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # Run nose ensuring that argv simulates running nosetests directly
+        import nose
+        nose.run_exit(argv=['nosetests', 'tests'])
 
 
 def rel_file(*args):
@@ -32,7 +46,7 @@ setup(
     license='Public Domain',
     install_requires=["arrow"],
     tests_require=["nose"],
-    test_suite='nose.collector',
+    cmdclass={'test': NoseTestCommand},
     classifiers=[
         'Programming Language :: Python',
         'Development Status :: 3 - Alpha',
