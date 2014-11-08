@@ -28,7 +28,7 @@ class BaseField(object):
     builtin_validators = []
 
     def __init__(self, source=None, default=None, required=True,
-            help_text=None, verbose_name=None, validators=None):
+                 help_text=None, verbose_name=None, validators=None):
         self.source = source
         self.default = default
         self.required = required
@@ -268,25 +268,25 @@ class ModelField(WrappedObjectField):
     It takes a single required argument, which is the nested class.
     For example, given the following dictionary::
 
-        some_data = {
-            'first_item': 'Some value',
-            'second_item': {
-                'nested_item': 'Some nested value',
-            },
-        }
+        >>> some_data = {
+        ...     'first_item': 'Some value',
+        ...     'second_item': {
+        ...         'nested_item': 'Some nested value',
+        ...     },
+        ... }
 
-    You could build the following classes
-    (note that you have to define the inner nested models first)::
+    You could build the following classes (note that you have to define the
+    inner nested models first):
 
-        class MyNestedModel(micromodels.Model):
-            nested_item = micromodels.CharField()
-
-        class MyMainModel(micromodels.Model):
-            first_item = micromodels.CharField()
-            second_item = micromodels.ModelField(MyNestedModel)
+        >>> import micromodels
+        >>> class MyNestedModel(micromodels.Model):
+        ...     nested_item = micromodels.CharField()
+        ...
+        >>> class MyMainModel(micromodels.Model):
+        ...     first_item = micromodels.CharField()
+        ...     second_item = micromodels.ModelField(MyNestedModel)
 
     Then you can access the data as follows::
-
         >>> m = MyMainModel(some_data)
         >>> m.first_item
         u'Some value'
@@ -324,19 +324,20 @@ class ModelCollectionField(WrappedObjectField):
     nested class that each item in the list should be converted to.
     For example::
 
-        some_data = {
-            'list': [
-                {'value': 'First value'},
-                {'value': 'Second value'},
-                {'value': 'Third value'},
-            ]
-        }
+        >>> some_data = {
+        ...     'list': [
+        ...         {'value': 'First value'},
+        ...         {'value': 'Second value'},
+        ...         {'value': 'Third value'},
+        ...     ]
+        ... }
 
-        class MyNestedModel(micromodels.Model):
-            value = micromodels.CharField()
+        >>> import micromodels
+        >>> class MyNestedModel(micromodels.Model):
+        ...     value = micromodels.CharField()
 
-        class MyMainModel(micromodels.Model):
-            list = micromodels.ModelCollectionField(MyNestedModel)
+        >>> class MyMainModel(micromodels.Model):
+        ...     list = micromodels.ModelCollectionField(MyNestedModel)
 
         >>> m = MyMainModel(some_data)
         >>> len(m.list)
@@ -377,16 +378,17 @@ class FieldCollectionField(BaseField):
 
     Here are some examples::
 
-        data = {
-                    'legal_name': 'John Smith',
-                    'aliases': ['Larry', 'Mo', 'Curly']
-        }
+        >>> data = {
+        ...             'legal_name': 'John Smith',
+        ...             'aliases': ['Larry', 'Mo', 'Curly']
+        ... }
+        >>> from micromodels.models import Model
+        >>> class Person(Model):
+        ...     legal_name = CharField()
+        ...     aliases = FieldCollectionField(CharField())
+        ...
+        >>> p = Person(data)
 
-        class Person(Model):
-            legal_name = CharField()
-            aliases = FieldCollectionField(CharField())
-
-        p = Person(data)
 
     And now a quick REPL session::
 
@@ -401,18 +403,19 @@ class FieldCollectionField(BaseField):
 
     Here is a bit more complicated example involving args and kwargs::
 
-        data = {
-                    'name': 'San Andreas',
-                    'dates': ['1906-05-11', '1948-11-02', '1970-01-01']
-        }
-
-        class FaultLine(Model):
-            name = CharField()
-            earthquake_dates = FieldCollectionField(DateField('%Y-%m-%d',
-                                                    serial_format='%m-%d-%Y'),
-                                                    source='dates')
-
-        f = FaultLine(data)
+        >>> data = {
+        ...     'name': 'San Andreas',
+        ...     'dates': ['1906-05-11', '1948-11-02', '1970-01-01']
+        ... }
+        >>>
+        >>> class FaultLine(Model):
+        ...     name = CharField()
+        ...     earthquake_dates = FieldCollectionField(
+        ...         DateField('%Y-%m-%d',
+        ...         serial_format='%m-%d-%Y'),
+        ...         source='dates'
+        ... )
+        >>> f = FaultLine(data)
 
     Notice that source is passed to to the
     :class:`~micromodels.FieldCollectionField`, not the
@@ -424,14 +427,17 @@ class FieldCollectionField(BaseField):
         >>> f.name
         u'San Andreas'
         >>> f.earthquake_dates
-        [datetime.date(1906, 5, 11), datetime.date(1948, 11, 2), datetime.date(1970, 1, 1)]
+        [datetime.date(1906, 5, 11), datetime.date(1948, 11, 2), datetime.date(1
+        970, 1, 1)]
         >>> f.to_dict()
-        {'earthquake_dates': [datetime.date(1906, 5, 11), datetime.date(1948, 11, 2), datetime.date(1970, 1, 1)],
-         'name': u'San Andreas'}
+        {'earthquake_dates': [datetime.date(1906, 5, 11), datetime.date(1948, 11
+        , 2), datetime.date(1970, 1, 1)], 'name': u'San Andreas'}
         >>> f.to_dict(serial=True)
-        {'earthquake_dates': ['05-11-1906', '11-02-1948', '01-01-1970'], 'name': u'San Andreas'}
+        {'earthquake_dates': ['05-11-1906', '11-02-1948', '01-01-1970'], 'name':
+        u'San Andreas'}
         >>> f.to_json()
-        '{"earthquake_dates": ["05-11-1906", "11-02-1948", "01-01-1970"], "name": "San Andreas"}'
+        '{"earthquake_dates": ["05-11-1906", "11-02-1948", "01-01-1970"], "name"
+        : "San Andreas"}'
 
     """
     def __init__(self, field_instance, **kwargs):
