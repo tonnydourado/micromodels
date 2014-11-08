@@ -27,31 +27,37 @@ class ClassCreationTestCase(unittest.TestCase):
 
     def test_field_collected(self):
         """Model property should be of correct type"""
-        self.assertTrue(isinstance(self.instance._fields['name'], micromodels.CharField))
+        self.assertTrue(isinstance(self.instance._fields['name'],
+                                   micromodels.CharField))
 
     def test_field_source_not_set(self):
         """Field without a custom source should have a source of None"""
         self.assertEqual(self.instance._fields['name'].source, None)
 
     def test_field_source_set(self):
-        """Field with custom source specificied should have source property set correctly"""
-        self.assertEqual(self.instance._fields['field_with_source'].source, 'foo')
+        """Field with custom source specificied should have source property set
+        correctly"""
+        source = self.instance._fields['field_with_source'].source
+        self.assertEqual(source, 'foo')
 
     def test_field_default(self):
-        """Field with a default value has that default value populated on the Model"""
+        """Field with a default value has that default value populated on the
+        Model"""
         self.assertEqual(self.instance.field_with_default, date.today())
 
 
 class BaseFieldTestCase(unittest.TestCase):
 
     def test_field_without_provided_source(self):
-        """If no source parameter is provided, the field's source attribute should be None"""
+        """If no source parameter is provided, the field's source attribute
+        should be None"""
         field = micromodels.fields.BaseField()
         self.assertTrue(hasattr(field, 'source'))
         self.assertTrue(field.source is None)
 
     def test_field_with_provided_source(self):
-        """If a source parameter is provided, the field's source attribute should be set to the value of this parameter"""
+        """If a source parameter is provided, the field's source attribute
+        should be set to the value of this parameter"""
         field = micromodels.fields.BaseField(source='customsource')
         self.assertEqual(field.source, 'customsource')
 
@@ -176,7 +182,8 @@ class BooleanFieldTestCase(unittest.TestCase):
         self.assertEqual(self.field.to_python(), False)
 
     def test_string_conversion(self):
-        """BooleanField should convert the string "True" (case insensitive) to True, all other values to False"""
+        """BooleanField should convert the string "True" (case insensitive) to
+        True, all other values to False"""
         self.field.populate('true')
         self.assertEqual(self.field.to_python(), True)
         self.field.populate('True')
@@ -187,7 +194,8 @@ class BooleanFieldTestCase(unittest.TestCase):
         self.assertEqual(self.field.to_python(), False)
 
     def test_integer_conversion(self):
-        """BooleanField should convert values <= 0 to False, all other integers to True"""
+        """BooleanField should convert values <= 0 to False, all other integers
+        to True"""
         self.field.populate(0)
         self.assertEqual(self.field.to_python(), False)
         self.field.populate(-100)
@@ -211,7 +219,8 @@ class DateTimeFieldTestCase(unittest.TestCase):
         import datetime
         self.format = "%a %b %d %H:%M:%S +0000 %Y"
         self.datetimestring = "Tue Mar 21 20:50:14 +0000 2006"
-        self.field = micromodels.DateTimeField(format=self.format, default=datetime.datetime.utcnow)
+        self.field = micromodels.DateTimeField(format=self.format,
+                                               default=datetime.datetime.utcnow)
 
     def test_format_conversion(self):
         import datetime
@@ -458,11 +467,11 @@ class ModelCollectionFieldTestCase(unittest.TestCase):
             posts = micromodels.ModelCollectionField(Post)
 
         data = {
-                'name': 'Eric Martin',
-                'posts': [
-                            {'title': 'Post #1'},
-                            {'title': 'Post #2'}
-                ]
+            'name': 'Eric Martin',
+            'posts': [
+                {'title': 'Post #1'},
+                {'title': 'Post #2'}
+            ]
         }
 
         eric = User.from_dict(data)
@@ -475,14 +484,17 @@ class ModelCollectionFieldTestCase(unittest.TestCase):
 
         class User(micromodels.Model):
             name = micromodels.CharField()
-            posts = micromodels.ModelCollectionField(Post, related_name="author")
+            posts = micromodels.ModelCollectionField(
+                Post,
+                related_name="author"
+            )
 
         data = {
-                'name': 'Eric Martin',
-                'posts': [
-                            {'title': 'Post #1'},
-                            {'title': 'Post #2'}
-                ]
+            'name': 'Eric Martin',
+            'posts': [
+                {'title': 'Post #1'},
+                {'title': 'Post #2'}
+            ]
         }
 
         eric = User.from_dict(data)
@@ -509,12 +521,14 @@ class FieldCollectionFieldTestCase(unittest.TestCase):
     def test_field_collection_field_to_serial(self):
         class Person(micromodels.Model):
             aliases = micromodels.FieldCollectionField(micromodels.CharField())
-            events = micromodels.FieldCollectionField(micromodels.DateField('%Y-%m-%d',
-                                        serial_format='%m-%d-%Y'), source='schedule')
+            events = micromodels.FieldCollectionField(
+                micromodels.DateField('%Y-%m-%d', serial_format='%m-%d-%Y'),
+                source='schedule'
+            )
 
         data = {
-                    'aliases': ['Joe', 'John', 'Bob'],
-                    'schedule': ['2011-01-30', '2011-04-01']
+            'aliases': ['Joe', 'John', 'Bob'],
+            'schedule': ['2011-01-30', '2011-04-01']
         }
 
         p = Person.from_dict(data)
@@ -593,12 +607,17 @@ class ModelValidationTestCase(unittest.TestCase):
 
         class UserModel(micromodels.Model):
             username = micromodels.CharField(required=True)
-            timestamp = micromodels.DateTimeField(default=datetime.datetime.utcnow, required=True)
+            timestamp = micromodels.DateTimeField(
+                default=datetime.datetime.utcnow,
+                required=True
+            )
             age = micromodels.IntegerField(required=False)
 
             def validate_age(self):
                 if self.age and self.age < 0:
-                    raise micromodels.ValidationError("You can't be less than zero years old.")
+                    raise micromodels.ValidationError(
+                        "You can't be less than zero years old."
+                    )
 
         self.model = UserModel
 
@@ -615,7 +634,10 @@ class ModelValidationTestCase(unittest.TestCase):
     def test_invalid_field(self):
         instance = self.model.from_kwargs(username='user', age=-4)
         errors = instance.validate()
-        self.assertEqual(errors, dict(age=["You can't be less than zero years old."]))
+        self.assertEqual(
+            errors,
+            {'age': ["You can't be less than zero years old."]}
+        )
 
 
 if __name__ == "__main__":
