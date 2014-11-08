@@ -3,6 +3,7 @@ import decimal
 import arrow
 import uuid
 import json
+import six
 
 
 class ValidationError(Exception):
@@ -111,7 +112,9 @@ class CharField(BaseField):
         Unicode string.
 
         """
-        return unicode(self.data)
+        if isinstance(self.data, six.text_type):
+            return self.data
+        return six.u(self.data)
 
 
 class IntegerField(BaseField):
@@ -160,7 +163,7 @@ class BooleanField(BaseField):
         to ``True``, as will any positive integers.
 
         """
-        if isinstance(self.data, basestring):
+        if isinstance(self.data, six.string_types):
             return self.data.strip().lower() == 'true'
         if isinstance(self.data, int):
             return self.data > 0
@@ -242,7 +245,7 @@ class JSONField(BaseField):
     """Field to represent a dict or list as a JSON string."""
 
     def _to_python(self):
-        if isinstance(self.data, basestring):
+        if isinstance(self.data, six.string_types):
             return json.loads(self.data)
         return self.data
 
