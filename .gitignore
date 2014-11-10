@@ -4,6 +4,7 @@
 *.swp
 .DS_Store
 .idea
+.tox/
 build
 dist
 MANIFEST
