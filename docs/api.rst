@@ -16,10 +16,11 @@ Fields
 Basic Fields
 ~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: micromodels.BooleanField
 .. autoclass:: micromodels.CharField
 .. autoclass:: micromodels.IntegerField
 .. autoclass:: micromodels.FloatField
+.. autoclass:: micromodels.DecimalField
+.. autoclass:: micromodels.BooleanField
 
 Datetime Fields
 ~~~~~~~~~~~~~~~~~~~~
@@ -27,6 +28,12 @@ Datetime Fields
 .. autoclass:: micromodels.DateTimeField
 .. autoclass:: micromodels.DateField
 .. autoclass:: micromodels.TimeField
+
+Other Fields
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: micromodels.UUIDField
+.. autoclass:: micromodels.JSONField
 
 Relationship Fields
 ~~~~~~~~~~~~~~~~~~~~
