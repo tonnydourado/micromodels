@@ -1,6 +1,7 @@
 import json
 from copy import copy
 from collections import OrderedDict
+from six import add_metaclass
 from micromodels.fields import BaseField, ValidationError
 
 
@@ -10,7 +11,8 @@ def get_declared_fields(bases, attrs):
     similar fields on the base classes (in 'bases').
     """
     fields = list()
-    for field_name, obj in attrs.items():
+    attrs_items = list(attrs.items())
+    for field_name, obj in attrs_items:
         if isinstance(obj, BaseField):
             if not obj.verbose_name:
                 obj.verbose_name = field_name
@@ -19,7 +21,7 @@ def get_declared_fields(bases, attrs):
 
     for base in bases[::-1]:
         if hasattr(base, '_clsfields'):
-            fields = base._clsfields.items() + fields
+            fields = list(base._clsfields.items()) + fields
 
     return OrderedDict(fields)
 
@@ -34,6 +36,7 @@ class ModelMeta(type):
         return new_class
 
 
+@add_metaclass(ModelMeta)
 class Model(object):
     """The Model is the main component of micromodels. Model makes it trivial
     to parse data from many sources, including JSON APIs.
@@ -75,7 +78,7 @@ class Model(object):
     value are just set on the instance like any other assignment in Python.
 
     """
-    __metaclass__ = ModelMeta
+    # __metaclass__ = ModelMeta
 
     def __init__(self, **values):
         super(Model, self).__setattr__('_extra', OrderedDict())
@@ -112,7 +115,7 @@ class Model(object):
     def set_data(self, data, is_json=False):
         if is_json:
             data = json.loads(data)
-        for name, field in self._clsfields.iteritems():
+        for name, field in self._clsfields.items():
             key = field.source or name
             if key in data:
                 setattr(self, name, data[key])
@@ -189,17 +192,17 @@ class Model(object):
         '''
 
         error_dict = {}
-        for name, field in self._fields.iteritems():
+        for name, field in self._fields.items():
             try:
                 field.validate()
             except ValidationError as err:
                 error_dict.setdefault(name, [])
-                error_dict[name].append(err.message)
+                error_dict[name].append(str(err))
             try:
                 getattr(self, 'validate_{0}'.format(name))()
             except AttributeError:
                 continue
             except ValidationError as err:
                 error_dict.setdefault(name, [])
-                error_dict[name].append(err.message)
+                error_dict[name].append(str(err))
         return error_dict or None
