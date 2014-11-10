@@ -1,3 +1,5 @@
+import datetime
+from aniso8601.timezone import parse_timezone
 from datetime import date
 import decimal
 import unittest
@@ -216,35 +218,30 @@ class BooleanFieldTestCase(unittest.TestCase):
 class DateTimeFieldTestCase(unittest.TestCase):
 
     def setUp(self):
-        import datetime
         self.format = "%a %b %d %H:%M:%S +0000 %Y"
         self.datetimestring = "Tue Mar 21 20:50:14 +0000 2006"
         self.field = micromodels.DateTimeField(format=self.format,
                                                default=datetime.datetime.utcnow)
 
     def test_format_conversion(self):
-        import datetime
         self.field.populate(self.datetimestring)
         converted = self.field.to_python()
         self.assertTrue(isinstance(converted, datetime.datetime))
         self.assertEqual(converted.strftime(self.format), self.datetimestring)
 
     def test_iso8601_conversion(self):
-        import datetime
-        from PySO8601 import Timezone
-
         field = micromodels.DateTimeField()
         field.populate("2010-07-13T14:01:00Z")
         result = field.to_python()
         expected = datetime.datetime(2010, 7, 13, 14, 1, 0,
-                                     tzinfo=Timezone())
+                                     tzinfo=parse_timezone('+00:00'))
         self.assertEqual(expected, result)
 
         field = micromodels.DateTimeField()
         field.populate("2010-07-13T14:02:00-05:00")
         result = field.to_python()
         expected = datetime.datetime(2010, 7, 13, 14, 2, 0,
-                                     tzinfo=Timezone("-05:00"))
+                                     tzinfo=parse_timezone('-05:00'))
 
         self.assertEqual(expected, result)
 
@@ -252,7 +249,7 @@ class DateTimeFieldTestCase(unittest.TestCase):
         field.populate("20100713T140200-05:00")
         result = field.to_python()
         expected = datetime.datetime(2010, 7, 13, 14, 2, 0,
-                                     tzinfo=Timezone("-05:00"))
+                                     tzinfo=parse_timezone('-05:00'))
 
         self.assertEqual(expected, result)
 
@@ -274,7 +271,6 @@ class DateTimeFieldTestCase(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_none_conversion(self):
-        import datetime
         self.field.populate(None)
         self.assertIsInstance(self.field.to_python(), datetime.datetime)
 
@@ -287,14 +283,12 @@ class DateFieldTestCase(unittest.TestCase):
         self.field = micromodels.DateField(format=self.format)
 
     def test_format_conversion(self):
-        import datetime
         self.field.populate(self.datestring)
         converted = self.field.to_python()
         self.assertTrue(isinstance(converted, datetime.date))
         self.assertEqual(converted.strftime(self.format), self.datestring)
 
     def test_iso8601_conversion(self):
-        import datetime
         field = micromodels.DateField()
         field.populate("2010-12-28")
         result = field.to_python()
@@ -316,14 +310,12 @@ class TimeFieldTestCase(unittest.TestCase):
         self.field = micromodels.TimeField(format=self.format)
 
     def test_format_conversion(self):
-        import datetime
         self.field.populate(self.timestring)
         converted = self.field.to_python()
         self.assertTrue(isinstance(converted, datetime.time))
         self.assertEqual(converted.strftime(self.format), self.timestring)
 
     def test_iso8601_conversion(self):
-        import datetime
         field = micromodels.TimeField()
         field.populate("09:33:30")
         result = field.to_python()
@@ -603,7 +595,6 @@ class ModelTestCase(unittest.TestCase):
 
 class ModelValidationTestCase(unittest.TestCase):
     def setUp(self):
-        import datetime
 
         class UserModel(micromodels.Model):
             username = micromodels.CharField(required=True)

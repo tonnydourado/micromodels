@@ -44,7 +44,7 @@ setup(
     author='Jamie Matthews',
     author_email='jamie.matthews@gmail.com',
     license='Public Domain',
-    install_requires=["arrow"],
+    install_requires=["aniso8601"],
     tests_require=["nose"],
     cmdclass={'test': NoseTestCommand},
     classifiers=[

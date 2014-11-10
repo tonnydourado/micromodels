@@ -1,6 +1,6 @@
 import datetime
 import decimal
-import arrow
+import aniso8601
 import uuid
 import json
 import six
@@ -193,7 +193,7 @@ class DateTimeField(BaseField):
             return self.data
         elif self.format is None:
             # parse as iso8601
-            return arrow.get(self.data)
+            return aniso8601.parse_datetime(self.data)
         else:
             return datetime.datetime.strptime(self.data, self.format)
 
@@ -210,9 +210,10 @@ class DateField(DateTimeField):
         # don't parse data that is already native
         if isinstance(self.data, datetime.date):
             return self.data
+        elif self.format is None:
+            return aniso8601.parse_date(self.data)
 
-        dt = super(DateField, self)._to_python()
-        return dt.date()
+        return super(DateField, self)._to_python().date()
 
 
 class TimeField(DateTimeField):
@@ -224,7 +225,7 @@ class TimeField(DateTimeField):
             return self.data
         elif self.format is None:
             # parse as iso8601
-            return arrow.get(self.data).time()
+            return aniso8601.parse_time(self.data)
         else:
             return datetime.datetime.strptime(self.data, self.format).time()
 
