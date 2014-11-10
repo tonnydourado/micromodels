@@ -59,20 +59,20 @@ class Model(object):
 
     If there is a matching field, then :meth:`to_python` is called on the field
     with the value.
-        If :meth:`to_python` does not raise an exception, then the result of
-        :meth:`to_python` is set on the instance, and the method is completed.
-        Essentially, this means that the first thing setting an attribute tries
-        to do is process the data as if it was a "primitive" data type.
+    If :meth:`to_python` does not raise an exception, then the result of
+    :meth:`to_python` is set on the instance, and the method is completed.
+    Essentially, this means that the first thing setting an attribute tries
+    to do is process the data as if it was a "primitive" data type.
 
-        If :meth:`to_python` does raise an exception, this means that the data
-        might already be an appropriate Python type. The :class:`Model` then
-        attempts to *serialize* the data into a "primitive" type using the
-        field's :meth:`to_serial` method.
+    If :meth:`to_python` does raise an exception, this means that the data
+    might already be an appropriate Python type. The :class:`Model` then
+    attempts to *serialize* the data into a "primitive" type using the
+    field's :meth:`to_serial` method.
 
-            If this fails, a ``TypeError`` is raised.
+    If this fails, a ``TypeError`` is raised.
 
-            If it does not fail, the value is set on the instance, and the
-            method is complete.
+    If it does not fail, the value is set on the instance, and the
+    method is complete.
 
     If the instance doesn't have a field matching the key, then the key and
     value are just set on the instance like any other assignment in Python.
@@ -184,10 +184,12 @@ class Model(object):
 
         For example:
 
-            m = MyModel.from_kwargs(foo='bar', fizz='buzz')
-            errors = m.validate()
-            if errors:
-                handle_errors()
+            >>> class MyModel(Model): pass
+            >>> def handle_errors(): pass
+            >>> m = MyModel.from_kwargs(foo='bar', fizz='buzz')
+            >>> errors = m.validate()
+            >>> if errors:
+            ...     handle_errors()
 
         '''
 
