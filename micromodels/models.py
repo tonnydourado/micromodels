@@ -169,7 +169,7 @@ class Model(object):
                         for key in self._fields.keys() if hasattr(self, key))
         else:
             return dict((key, getattr(self, key)) for key in self._fields.keys()
-                       if hasattr(self, key))
+                        if hasattr(self, key))
 
     def to_json(self):
         '''Returns a representation of the model as a JSON string. This method
